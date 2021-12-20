@@ -18,6 +18,7 @@ import type {DraftDecoratorType} from 'DraftDecoratorType';
 import type {DraftInlineStyle} from 'DraftInlineStyle';
 import type {EditorChangeType} from 'EditorChangeType';
 import type {EntityMap} from 'EntityMap';
+import { is } from 'immutable';
 
 const BlockTree = require('BlockTree');
 const ContentState = require('ContentState');
@@ -604,11 +605,19 @@ function updateSelection(
   selection: SelectionState,
   forceSelection: boolean,
 ): EditorState {
+
+  const currentSelection = editorState.getSelection();
+  const needResetInlineStyleOverride = 
+    currentSelection.getAnchorKey() === selection.getAnchorKey() &&
+    currentSelection.getAnchorOffset() == selection.getAnchorOffset() &&
+    currentSelection.getFocusKey() === selection.getFocusKey() &&
+    currentSelection.getFocusOffset() == selection.getFocusOffset();
+
   return EditorState.set(editorState, {
     selection,
     forceSelection,
     nativelyRenderedContent: null,
-    inlineStyleOverride: null,
+    inlineStyleOverride: needResetInlineStyleOverride? editorState.getCurrentInlineStyle() : null
   });
 }
 

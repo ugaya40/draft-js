@@ -49,6 +49,7 @@ const RESOLVE_DELAY = 20;
 let resolved = false;
 let stillComposing = false;
 let domObserver = null;
+let targetEditorState = null;
 
 function startDOMObserver(editor: DraftEditor) {
   if (!domObserver) {
@@ -64,6 +65,15 @@ const DraftEditorCompositionHandler = {
    */
   onCompositionStart(editor: DraftEditor): void {
     stillComposing = true;
+    if(!editor._latestEditorState.getSelection().isCollapsed()) {
+      const state = editor._latestEditorState;
+      const newContentState = DraftModifier.removeRange(
+        state.getCurrentContent(),
+        state.getSelection(),
+        'forward'
+      );
+      targetEditorState = EditorState.set(state, {currentContent: newContentState});
+    }
     startDOMObserver(editor);
   },
 
@@ -152,10 +162,11 @@ const DraftEditorCompositionHandler = {
       return;
     }
 
-    const lastEditorState = editor._latestEditorState;
+    const lastEditorState = targetEditorState != null ? targetEditorState : editor._latestEditorState;
     const mutations = nullthrows(domObserver).stopAndFlushMutations();
     domObserver = null;
     resolved = true;
+    targetEditorState = null;
 
     let editorState = EditorState.set(lastEditorState, {
       inCompositionMode: false,
@@ -189,6 +200,8 @@ const DraftEditorCompositionHandler = {
     mutations.forEach((composedChars, offsetKey) => {
       const {blockKey, decoratorKey, leafKey} =
         DraftOffsetKey.decode(offsetKey);
+
+      if(!contentState.getBlockMap().has(blockKey)) return;
 
       const {start, end} = editorState
         .getBlockTree(blockKey)

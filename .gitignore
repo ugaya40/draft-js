@@ -9,3 +9,7 @@ npm-debug.log
 yarn-error.log
 .DS_Store
 meta/bundle-size-stats/
+*.eslintcache
+.gitignore
+.vscode/
+scripts/module-map.js
